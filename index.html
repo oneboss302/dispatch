@@ -58,6 +58,13 @@ input[type=search]{flex:1}
 .badge.on{color:var(--ok);border:1px solid var(--ok)} .badge.off{border:1px solid var(--line)}
 .approx{font-size:.72rem;color:var(--muted);font-style:italic}
 .empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.scope{padding:8px 12px;font-size:.82rem;color:var(--muted);border-bottom:1px solid var(--line);background:var(--soft)}
+.scope a{color:var(--ink)}
+.delco-town{padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+.delco-town h3{margin:0;font-size:1.05rem}
+.delco-town p{margin:0;color:var(--muted);font-size:.9rem}
+.delco-town ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.delco-town a{text-decoration:none}.delco-town a:hover{text-decoration:underline}
 .mapwrap{position:sticky;top:120px}
 #map{height:calc(100vh - 160px);min-height:420px;border-radius:12px;border:1px solid var(--line);background:var(--soft)}
 .leaflet-container{font:inherit}
@@ -117,6 +124,7 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
       </div>
       <div class="frow"><select id="town" aria-label="Town"><option value="">All towns</option></select><input type="search" id="q" placeholder="Search street, call type, station…" aria-label="Search calls"></div>
     </div>
+    <div class="scope">Live calls cover <b>Chester County</b> only. Delaware County doesn't publish its 911 calls. <a href="#delco">What's available for Delco</a></div>
     <ul class="calls" id="calls"><li class="empty">Loading calls…</li></ul>
   </section>
   <section class="mapwrap"><div id="map" role="region" aria-label="Map of calls"></div></section>
@@ -178,8 +186,21 @@ function renderStats(){
     '<span class="stat"><b>'+day24+'</b>calls in 24h</span>'+(busiest?'<span class="stat">Busiest: <b style="font-family:inherit;font-size:.9rem">'+esc(busiest)+'</b> ('+towns[busiest]+')</span>':"");
 }
 
+function renderDelcoTown(el,town){
+  var name=town.replace(/^Delco: /,""), short=name.replace(/ (Township|Borough|City)$/,"");
+  var rx=new RegExp("\\b"+short.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
+  var hits=D.news.filter(function(n){return rx.test(n.title)});
+  var delcoNews=D.news.filter(function(n){return n.county==="Delaware"&&hits.indexOf(n)<0}).slice(0,5);
+  function items(a){return a.map(function(n){return '<li><a href="'+esc(safeUrl(n.url))+'" target="_blank" rel="noopener">'+esc(n.title)+'</a> <span class="src">'+esc(n.src)+' · '+esc(ago(n.date))+'</span></li>'}).join("")}
+  el.innerHTML='<li class="delco-town"><h3>'+esc(name)+', Delaware County</h3>'+
+    '<p>Delaware County doesn\'t publish its 911 calls anywhere public, so live calls for '+esc(short)+' can\'t be shown here. Live scanner audio is the closest real-time source.</p>'+
+    '<ul>'+D.scanners.map(function(s){return '<li><a href="'+esc(safeUrl(s.url))+'" target="_blank" rel="noopener">🎧 '+esc(s.name)+'</a></li>'}).join("")+'</ul>'+
+    '<p><b style="color:var(--ink)">News mentioning '+esc(short)+'</b></p><ul>'+(hits.length?items(hits):'<li class="src">Nothing in the last 3 days.</li>')+'</ul>'+
+    (delcoNews.length?'<p><b style="color:var(--ink)">Other Delco incident news</b></p><ul>'+items(delcoNews)+'</ul>':"")+'</li>';
+}
 function renderList(){
   var list=filtered(), el=document.getElementById("calls");
+  if(F.town&&F.town.indexOf("Delco: ")===0){renderDelcoTown(el,F.town);if(map)map.setView([39.92,-75.37],11);return []}
   if(!list.length){el.innerHTML='<li class="empty">No calls match these filters.</li>';return list}
   el.innerHTML=list.map(function(c){
     var isNew=seen&&!seen[c.id];
@@ -246,8 +267,10 @@ function load(){
     D=d;
     var towns={};d.calls.forEach(function(c){towns[c.muni]=1});
     var sel=document.getElementById("town"), cur=F.town;
-    sel.innerHTML='<option value="">All towns</option>'+Object.keys(towns).sort().map(function(t){return '<option'+(t===cur?" selected":"")+'>'+esc(t)+'</option>'}).join("");
-    if(cur&&!towns[cur]){sel.insertAdjacentHTML("beforeend",'<option selected>'+esc(cur)+'</option>')}
+    function opt(t){return '<option'+(t===cur?" selected":"")+'>'+esc(t)+'</option>'}
+    sel.innerHTML='<option value="">All towns</option><optgroup label="Chester County: live calls">'+Object.keys(towns).sort().map(opt).join("")+'</optgroup>'+
+      '<optgroup label="Delaware County: no public call data">'+(d.delco_munis||[]).map(function(t){return opt("Delco: "+t)}).join("")+'</optgroup>';
+    if(cur&&!towns[cur]&&cur.indexOf("Delco: ")!==0){sel.insertAdjacentHTML("beforeend",opt(cur))}
     render();
   }).catch(function(){document.getElementById("status").textContent="Couldn't load calls. Retrying…"});
 }
