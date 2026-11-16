@@ -50,6 +50,7 @@ input[type=search]{flex:1}
 .call.new{animation:flash 2.5s ease-out}
 @keyframes flash{from{background:color-mix(in srgb,var(--fire) 22%,transparent)}}
 .ctype{font-weight:600}
+.cdet{font-family:var(--f-mono);font-size:.74rem;color:var(--muted);display:flex;gap:4px 12px;flex-wrap:wrap;margin-top:4px}
 .cloc{font-size:.9rem}
 .cmeta{font-size:.8rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
 .right{text-align:right;font-size:.8rem;color:var(--muted);white-space:nowrap}
@@ -201,7 +202,8 @@ function renderList(){
     return '<li class="call '+esc(c.cat)+(live(c)?"":" cleared")+(isNew?" new":"")+(selected===c.id?" sel":"")+'" data-id="'+esc(c.id)+'" tabindex="0">'+
       '<span class="bar"></span><div><div class="ctype">'+esc(c.type)+'</div><div class="cloc">'+esc(place(c))+'</div>'+
       '<div class="cmeta"><span>'+esc(c.muni)+'</span><span>'+esc(unit(c))+'</span><span>'+esc(LABEL[c.cat]||c.cat)+'</span>'+
-      (c.prec==="town"?'<span class="approx">town-level location</span>':"")+(!c.ll?'<span class="approx">not on map</span>':"")+'</div></div>'+
+      (c.county==="Delaware"&&(c.nature||c.incident)?'</div><div class="cdet">'+(c.nature?'<span>Nature: '+esc(c.nature)+'</span>':"")+(c.time?'<span>Time: '+esc(c.time)+'</span>':"")+(c.incident?'<span>Incident: '+esc(c.incident)+'</span>':"")+(c.channel?'<span>Channel: '+esc(c.channel)+'</span>':"")+'</div><div class="cmeta">':"")+
+      (c.county==="Chester"?'<span>Incident '+esc(c.id)+'</span>':"")+(c.prec==="town"?'<span class="approx">town-level location</span>':"")+(!c.ll?'<span class="approx">not on map</span>':"")+'</div></div>'+
       '<div class="right"><div class="ago">'+esc(ago(when(c)))+'</div><div'+(c.dispatched?"":' title="The county didn\'t list a dispatch time, so this is when we first saw the call"')+'>'+(c.dispatched?"":"seen ")+esc(day(when(c)))+" "+esc(clock(when(c)))+'</div>'+
       (c.county==="Delaware"?(recent(c)?'<span class="badge on" title="Dispatched within the last hour. Delco\'s feed doesn\'t report when calls clear.">Recent</span>':'<span class="badge off">Dispatched</span>'):
        c.active?'<span class="badge on">Active</span>':'<span class="badge off" title="Left the active list around '+esc(clock(c.cleared))+'">Cleared</span>')+'</div></li>'}).join("");

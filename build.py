@@ -186,6 +186,10 @@ def delco_calls():
         except ValueError:
             dispatched = paged
         inc = field("incidentNumber", "Incident")
+        # Notes hold patient details (age, sex, condition, room) and are never kept.
+        # The one operational item in them, the radio channel ("$OPERATE ON EMS HAIL$"), is extracted.
+        chan = re.search(r"\$OPERATE ON ([^$]{2,40})\$", f.get("notes", ""), re.I)
+        channel = titlecase(chan.group(1).strip()).replace("Ems", "EMS") if chan else ""
         key = inc or f"D-{re.sub(r'\W+', '', nature)}-{re.sub(r'\W+', '', street)}-{t}"
         up = nature.upper()
         cat = ("fire" if up.startswith("FIRE") else "ems" if "EMS" in up[:8] else
@@ -198,6 +202,7 @@ def delco_calls():
         c = incidents.get(key)
         if not c:
             c = {"id": key, "cat": cat, "type": titlecase(typ).replace("(als)", "(ALS)"), "loc": loc, "muni": muni.strip(), "station": "",
+                 "nature": nature.upper(), "time": t, "incident": inc, "channel": channel,
                  "stations": [], "units": [], "dispatched": iso(dispatched), "county": "Delaware", "_paged": paged}
             incidents[key] = c
             order.append(key)
@@ -375,6 +380,9 @@ def main(state_dir, out_dir):
             h["units"] = sorted(set(h.get("units", [])) | set(c["units"]))
             h["station"] = ", ".join(h["stations"][:4]) + (f" +{len(h['stations']) - 4}" if len(h["stations"]) > 4 else "")
             h["last_seen"] = iso(NOW)
+            for k in ("nature", "time", "incident", "channel"):
+                if c.get(k) and not h.get(k):
+                    h[k] = c[k]
         else:
             c.update(first_seen=iso(NOW), last_seen=iso(NOW), active=None)   # the Delco feed has no cleared status
             history[c["id"]] = c

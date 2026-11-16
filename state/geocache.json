@@ -61,6 +61,10 @@
 39.99842,
 -75.57024
 ],
+"CARRIE LN, Westtown Township, Chester County, Pennsylvania": [
+39.93087,
+-75.55502
+],
 "CHESTNUT ST, West Chester Borough, Chester County, Pennsylvania": null,
 "CHESTNUT ST, West Chester, Chester County, Pennsylvania": [
 39.96032,
@@ -68,6 +72,10 @@
 ],
 "CLIFF LN, Tredyffrin Township, Chester County, Pennsylvania": null,
 "COLRN, Chester County, Pennsylvania": null,
+"CONESTOGA RD, East Whiteland Township, Chester County, Pennsylvania": [
+40.05579,
+-75.59218
+],
 "CONVENT LN, West Chester, Chester County, Pennsylvania": [
 39.96801,
 -75.60152
@@ -82,6 +90,7 @@
 -75.82057
 ],
 "DEAD END, Schuylkill Township, Chester County, Pennsylvania": null,
+"DEAD END, Westtown Township, Chester County, Pennsylvania": null,
 "DELAWARE LN, West Bradford Township, Chester County, Pennsylvania": [
 39.97596,
 -75.6983
@@ -122,6 +131,14 @@
 "HICKORY HILL RD, Pennsbury Township, Chester County, Pennsylvania": [
 39.87466,
 -75.63655
+],
+"HILLENDALE RD, New Garden Township, Chester County, Pennsylvania": [
+39.828,
+-75.74008
+],
+"HORSESHOE PIKE, Honey Brook Township, Chester County, Pennsylvania": [
+40.08542,
+-75.89743
 ],
 "KENSINGTON LN, Oxford, Chester County, Pennsylvania": [
 39.78389,
@@ -172,6 +189,10 @@
 40.03071,
 -75.56176
 ],
+"MOORES RD, East Whiteland Township, Chester County, Pennsylvania": [
+40.05476,
+-75.56055
+],
 "MORGANTOWN RD, CARNVONBERKS, Chester County, Pennsylvania": null,
 "MORTON ST, Newtown Township, Delaware County, Pennsylvania": [
 39.97621,
@@ -204,14 +225,30 @@
 39.87656,
 -75.37067
 ],
+"S BIRDELL RD, Honey Brook Township, Chester County, Pennsylvania": [
+40.05989,
+-75.8633
+],
 "SARASOTA PATH, Bethel Township, Delaware County, Pennsylvania": [
 39.8398,
 -75.52582
+],
+"SCHUYLKILL RD, East Pikeland Township, Chester County, Pennsylvania": [
+40.13539,
+-75.54194
 ],
 "STIRLING ST, Coatesville City, Chester County, Pennsylvania": null,
 "STIRLING ST, Coatesville, Chester County, Pennsylvania": [
 39.98396,
 -75.80635
+],
+"THOMPSON RD, New Garden Township, Chester County, Pennsylvania": [
+39.83473,
+-75.73713
+],
+"TOWNSHIP LINE RD, East Pikeland Township, Chester County, Pennsylvania": [
+40.13696,
+-75.53924
 ],
 "UNIVERSITY RD, Lower Oxford Township, Chester County, Pennsylvania": [
 39.81366,
