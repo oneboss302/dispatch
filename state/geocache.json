@@ -4,9 +4,21 @@
 39.98809,
 -75.80409
 ],
+"1ST AVE, Newtown Township, Delaware County, Pennsylvania": [
+39.97739,
+-75.38914
+],
+"ANDERSON AVE, Phoenixville, Chester County, Pennsylvania": [
+40.12223,
+-75.52138
+],
 "ATWATER DR, Tredyffrin Township, Chester County, Pennsylvania": [
 40.07001,
 -75.52333
+],
+"BALTIMORE PIKE, Lower Oxford Township, Chester County, Pennsylvania": [
+39.79676,
+-75.95957
 ],
 "BALTIMORE PIKE, New Garden Township, Chester County, Pennsylvania": [
 39.82785,
@@ -15,6 +27,22 @@
 "BALTIMORE PIKE, Penn Township, Chester County, Pennsylvania": [
 39.82206,
 -75.89678
+],
+"BEECH RD, Nether Providence Township, Delaware County, Pennsylvania": [
+39.8757,
+-75.37002
+],
+"BLACKHORSE HILL RD, Caln Township, Chester County, Pennsylvania": [
+39.99708,
+-75.80502
+],
+"BOOT RD, East Goshen Township, Chester County, Pennsylvania": [
+39.99849,
+-75.51669
+],
+"BYRNE DR, Schuylkill Township, Chester County, Pennsylvania": [
+40.11861,
+-75.50798
 ],
 "CABOT CT, New Garden Township, Chester County, Pennsylvania": [
 39.79428,
@@ -28,12 +56,23 @@
 40.01198,
 -75.71955
 ],
+"CARNVONBERKS, Chester County, Pennsylvania": null,
+"CARRIAGE DR, East Goshen Township, Chester County, Pennsylvania": [
+39.99842,
+-75.57024
+],
 "CHESTNUT ST, West Chester Borough, Chester County, Pennsylvania": null,
 "CHESTNUT ST, West Chester, Chester County, Pennsylvania": [
 39.96032,
 -75.60854
 ],
 "CLIFF LN, Tredyffrin Township, Chester County, Pennsylvania": null,
+"COLRN, Chester County, Pennsylvania": null,
+"CONVENT LN, West Chester, Chester County, Pennsylvania": [
+39.96801,
+-75.60152
+],
+"COUNTRY CLUB DR, East Caln Township, Chester County, Pennsylvania": null,
 "CREAGH KNOLL LN, West Bradford Township, Chester County, Pennsylvania": [
 39.97547,
 -75.69574
@@ -42,9 +81,14 @@
 39.9822,
 -75.82057
 ],
+"DEAD END, Schuylkill Township, Chester County, Pennsylvania": null,
 "DELAWARE LN, West Bradford Township, Chester County, Pennsylvania": [
 39.97596,
 -75.6983
+],
+"DUNWOODY VLG RD, Newtown Township, Delaware County, Pennsylvania": [
+39.98313,
+-75.39159
 ],
 "DUSK DR, West Nottingham Township, Chester County, Pennsylvania": [
 39.73294,
@@ -71,9 +115,17 @@
 39.99287,
 -75.60643
 ],
+"HAYFIELD RD, Tredyffrin Township, Chester County, Pennsylvania": [
+40.06906,
+-75.50133
+],
 "HICKORY HILL RD, Pennsbury Township, Chester County, Pennsylvania": [
 39.87466,
 -75.63655
+],
+"KENSINGTON LN, Oxford, Chester County, Pennsylvania": [
+39.78389,
+-75.98793
 ],
 "LADBROKE DR, West Whiteland Township, Chester County, Pennsylvania": [
 40.03402,
@@ -92,6 +144,10 @@
 39.96136,
 -75.60543
 ],
+"LINCOLN AVE, Phoenixville, Chester County, Pennsylvania": [
+40.12989,
+-75.51968
+],
 "LITTLE FOX LN, Pennsbury Township, Chester County, Pennsylvania": [
 39.84961,
 -75.63382
@@ -108,9 +164,18 @@
 40.01291,
 -75.7267
 ],
+"MARSHALL ST, West Chester, Chester County, Pennsylvania": [
+39.96102,
+-75.61728
+],
 "MAXIS DR, East Whiteland Township, Chester County, Pennsylvania": [
 40.03071,
 -75.56176
+],
+"MORGANTOWN RD, CARNVONBERKS, Chester County, Pennsylvania": null,
+"MORTON ST, Newtown Township, Delaware County, Pennsylvania": [
+39.97621,
+-75.39075
 ],
 "N HIGH ST, West Chester Borough, Chester County, Pennsylvania": null,
 "N HIGH ST, West Chester, Chester County, Pennsylvania": [
@@ -121,23 +186,55 @@
 39.99689,
 -75.59605
 ],
+"PIMLICO PL, Bethel Township, Delaware County, Pennsylvania": [
+39.83946,
+-75.526
+],
+"PINE DR, COLRN, Chester County, Pennsylvania": null,
 "PUSEY MILL RD, Penn Township, Chester County, Pennsylvania": [
 39.8247,
 -75.88924
 ],
+"RANCK RD, CARNVONBERKS, Chester County, Pennsylvania": null,
 "REESE ST, New Garden Township, Chester County, Pennsylvania": [
 39.82985,
 -75.76126
+],
+"RYANARD RD, Nether Providence Township, Delaware County, Pennsylvania": [
+39.87656,
+-75.37067
+],
+"SARASOTA PATH, Bethel Township, Delaware County, Pennsylvania": [
+39.8398,
+-75.52582
 ],
 "STIRLING ST, Coatesville City, Chester County, Pennsylvania": null,
 "STIRLING ST, Coatesville, Chester County, Pennsylvania": [
 39.98396,
 -75.80635
 ],
+"UNIVERSITY RD, Lower Oxford Township, Chester County, Pennsylvania": [
+39.81366,
+-75.92869
+],
+"VAMC ACCESS RD, Caln Township, Chester County, Pennsylvania": null,
 "VICTORIA DR, Coatesville City, Chester County, Pennsylvania": null,
 "VICTORIA DR, Coatesville, Chester County, Pennsylvania": [
 39.9848,
 -75.83494
+],
+"WALNUT DR, COLRN, Chester County, Pennsylvania": null,
+"WESSEX LN, Oxford, Chester County, Pennsylvania": [
+39.78436,
+-75.9844
+],
+"WEST CHESTER PIKE, Newtown Township, Delaware County, Pennsylvania": [
+39.98354,
+-75.42046
+],
+"WISTERIA DR, Tredyffrin Township, Chester County, Pennsylvania": [
+40.06663,
+-75.50162
 ],
 "WOODBINE RD, East Caln Township, Chester County, Pennsylvania": [
 40.011,

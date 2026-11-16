@@ -106,7 +106,7 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 <body data-tab="list">
 <header>
   <div class="hin">
-    <div><div class="logo"><i aria-hidden="true"></i>Castafero Dispatch</div><div class="sub">Chester &amp; Delaware County, PA · live fire, EMS &amp; traffic</div></div>
+    <div><div class="logo"><i aria-hidden="true"></i>Castafero Dispatch</div><div class="sub">Delaware &amp; Chester County, PA · live fire, EMS &amp; traffic calls</div></div>
     <div class="status" id="status">Loading…</div>
   </div>
   <div class="stats" id="stats"></div>
@@ -119,12 +119,14 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
         <button class="chip" aria-pressed="true" data-cat="fire"><span class="sw" style="background:var(--fire)"></span>Fire</button>
         <button class="chip" aria-pressed="true" data-cat="ems"><span class="sw" style="background:var(--ems)"></span>EMS</button>
         <button class="chip" aria-pressed="true" data-cat="traffic"><span class="sw" style="background:var(--traffic)"></span>Traffic</button>
-        <button class="chip" aria-pressed="false" id="activeOnly">Active only</button>
+        <button class="chip" aria-pressed="true" data-county="Delaware">Delco</button>
+        <button class="chip" aria-pressed="true" data-county="Chester">Chesco</button>
+        <button class="chip" aria-pressed="false" id="activeOnly" title="Chester County calls still on the county's active list, plus Delco calls from the last hour">Active only</button>
         <button class="chip notif" aria-pressed="false" id="notify" title="Browser notification for new calls that match these filters while this page is open">🔔 Alerts</button>
       </div>
       <div class="frow"><select id="town" aria-label="Town"><option value="">All towns</option></select><input type="search" id="q" placeholder="Search street, call type, station…" aria-label="Search calls"></div>
     </div>
-    <div class="scope">Live calls cover <b>Chester County</b> only. Delaware County doesn't publish its 911 calls. <a href="#delco">What's available for Delco</a></div>
+    <div class="scope"><b>Delco</b> calls courtesy of <a href="https://delcodispatch.com/" target="_blank" rel="noopener">Delco Dispatch</a>. <b>Chesco</b> calls from the county's public CAD. Patient details are never shown.</div>
     <ul class="calls" id="calls"><li class="empty">Loading calls…</li></ul>
   </section>
   <section class="mapwrap"><div id="map" role="region" aria-label="Map of calls"></div></section>
@@ -133,14 +135,14 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 <div class="below">
   <section class="box" id="delco">
     <h2>Delaware County</h2>
-    <p class="note">Delaware County doesn't publish a public live 911 feed the way Chester County does, so Delco calls can't be listed here. Live scanner audio is the best real-time source, and recent local incident news is below.</p>
+    <p class="note">Delco fire and EMS calls come from <a href="https://delcodispatch.com/" target="_blank" rel="noopener">Delco Dispatch</a> and are used with permission. Police calls aren't paged, so live scanner audio is the best real-time source for those.</p>
     <div class="scan"><ul id="scanners"></ul></div>
   </section>
   <section class="box"><h2>Local incident news</h2><p class="note">Fires, crashes and police activity reported in Delco and Chester County over the last 3 days. Satire sites are excluded.</p><ul id="news"></ul></section>
   <section class="box"><h2>Weather alerts</h2><p class="note">Active National Weather Service alerts for Delaware and Chester counties.</p><ul id="alerts"></ul></section>
   <section class="box"><h2>Chester County road closures</h2><p class="note">From the county's CAD system.</p><ul id="closures"></ul></section>
 </div>
-<footer>Chester County call data comes from the county Department of Emergency Services' public <a href="https://webcad.chesco.org/WebCad/webcad.asp">WebCAD</a> page and is checked every 5 minutes. Calls stay listed for 48 hours. Locations are the nearest cross streets, placed on the map from OpenStreetMap, so pins are approximate. "Cleared" means the call left the county's active list. This site isn't affiliated with any county or emergency agency, so don't use it to report an emergency: call 911. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</footer>
+<footer>Delaware County calls are courtesy of <a href="https://delcodispatch.com/">Delco Dispatch</a>, used with permission. Only call type, cross streets, town, stations and units are shown. Patient notes, house numbers, apartment numbers and facility names are removed. Delco's feed doesn't report when calls clear, so Delco calls show as "Recent" for an hour. Chester County call data comes from the county Department of Emergency Services' public <a href="https://webcad.chesco.org/WebCad/webcad.asp">WebCAD</a> page and is checked every 5 minutes. Calls stay listed for 48 hours. Locations are the nearest cross streets, placed on the map from OpenStreetMap, so pins are approximate. "Cleared" means a Chester County call left the county's active list. This site isn't affiliated with any county or emergency agency, so don't use it to report an emergency: call 911. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -149,14 +151,18 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 var D=null, seen=null, selected=null, markers={}, map=null, layer=null, tiles=null, firstLoad=true;
 var LABEL={fire:"Fire",ems:"EMS",traffic:"Traffic"};
 var store={get:function(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-var F=Object.assign({cats:{fire:true,ems:true,traffic:true},active:false,town:"",q:"",notify:false},store.get("dispatch-filters")||{});
+var F=Object.assign({cats:{fire:true,ems:true,traffic:true},counties:{Delaware:true,Chester:true},active:false,town:"",q:"",notify:false},store.get("dispatch-filters")||{});
+if(!F.counties)F.counties={Delaware:true,Chester:true};
+if(F.town&&F.town.indexOf("Delco: ")===0)F.town="";
+function recent(c){return c.county==="Delaware"&&Date.now()-new Date(c.dispatched||c.first_seen)<36e5}
+function live(c){return c.active===true||recent(c)}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function safeUrl(u){return /^https?:\/\//i.test(u||"")?u:"#"}
 function ago(iso){if(!iso)return"";var m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return"now";if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h "+(m%60)+"m ago";return Math.floor(h/24)+"d ago"}
 function clock(iso){return iso?new Date(iso).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):""}
 function day(iso){return iso?new Date(iso).toLocaleDateString([], {weekday:"short"}):""}
 function title(s){return String(s||"").toLowerCase().replace(/\b([a-z])/g,function(c){return c.toUpperCase()}).replace(/\b(Ems|Als|Bls|Mva)\b/g,function(w){return w.toUpperCase()})}
-function unit(c){return (c.cat==="traffic"?"Agency ":"Station ")+c.station}
+function unit(c){if(c.county==="Delaware")return c.station||"";return (c.cat==="traffic"?"Agency ":"Station ")+c.station}
 function when(c){return c.dispatched||c.first_seen}
 function place(c){return title(String(c.loc||"").replace(/\s*&\s*$/,"").replace(/\s*&\s*/," & "))}
 
@@ -171,7 +177,8 @@ function filtered(){
   var q=F.q.trim().toLowerCase();
   return D.calls.filter(function(c){
     if(!F.cats[c.cat])return false;
-    if(F.active&&!c.active)return false;
+    if(!F.counties[c.county])return false;
+    if(F.active&&!live(c))return false;
     if(F.town&&c.muni!==F.town)return false;
     if(q&&(c.type+" "+c.loc+" "+c.muni+" station "+c.station+" "+c.id).toLowerCase().indexOf(q)<0)return false;
     return true});
@@ -179,37 +186,25 @@ function filtered(){
 
 function renderStats(){
   var act={fire:0,ems:0,traffic:0},day24=0,towns={};
-  D.calls.forEach(function(c){if(c.active)act[c.cat]=(act[c.cat]||0)+1;if(Date.now()-new Date(c.dispatched||c.first_seen)<864e5){day24++;towns[c.muni]=(towns[c.muni]||0)+1}});
+  D.calls.forEach(function(c){if(live(c))act[c.cat]=(act[c.cat]||0)+1;if(Date.now()-new Date(c.dispatched||c.first_seen)<864e5){day24++;towns[c.muni]=(towns[c.muni]||0)+1}});
   var busiest=Object.keys(towns).sort(function(a,b){return towns[b]-towns[a]})[0];
   document.getElementById("stats").innerHTML=
     '<span class="stat fire"><b>'+act.fire+'</b>fire active</span><span class="stat ems"><b>'+act.ems+'</b>EMS active</span><span class="stat traffic"><b>'+act.traffic+'</b>traffic active</span>'+
-    '<span class="stat"><b>'+day24+'</b>calls in 24h</span>'+(busiest?'<span class="stat">Busiest: <b style="font-family:inherit;font-size:.9rem">'+esc(busiest)+'</b> ('+towns[busiest]+')</span>':"");
+    '<span class="stat"><b>'+day24+'</b>calls in 24h</span><span class="stat"><b>'+D.calls.filter(function(c){return c.county==="Delaware"&&Date.now()-new Date(c.dispatched||c.first_seen)<864e5}).length+'</b>Delco · <b>'+D.calls.filter(function(c){return c.county==="Chester"&&Date.now()-new Date(c.dispatched||c.first_seen)<864e5}).length+'</b>Chesco</span>'+(busiest?'<span class="stat">Busiest: <b style="font-family:inherit;font-size:.9rem">'+esc(busiest)+'</b> ('+towns[busiest]+')</span>':"");
 }
 
-function renderDelcoTown(el,town){
-  var name=town.replace(/^Delco: /,""), short=name.replace(/ (Township|Borough|City)$/,"");
-  var rx=new RegExp("\\b"+short.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b","i");
-  var hits=D.news.filter(function(n){return rx.test(n.title)});
-  var delcoNews=D.news.filter(function(n){return n.county==="Delaware"&&hits.indexOf(n)<0}).slice(0,5);
-  function items(a){return a.map(function(n){return '<li><a href="'+esc(safeUrl(n.url))+'" target="_blank" rel="noopener">'+esc(n.title)+'</a> <span class="src">'+esc(n.src)+' · '+esc(ago(n.date))+'</span></li>'}).join("")}
-  el.innerHTML='<li class="delco-town"><h3>'+esc(name)+', Delaware County</h3>'+
-    '<p>Delaware County doesn\'t publish its 911 calls anywhere public, so live calls for '+esc(short)+' can\'t be shown here. Live scanner audio is the closest real-time source.</p>'+
-    '<ul>'+D.scanners.map(function(s){return '<li><a href="'+esc(safeUrl(s.url))+'" target="_blank" rel="noopener">🎧 '+esc(s.name)+'</a></li>'}).join("")+'</ul>'+
-    '<p><b style="color:var(--ink)">News mentioning '+esc(short)+'</b></p><ul>'+(hits.length?items(hits):'<li class="src">Nothing in the last 3 days.</li>')+'</ul>'+
-    (delcoNews.length?'<p><b style="color:var(--ink)">Other Delco incident news</b></p><ul>'+items(delcoNews)+'</ul>':"")+'</li>';
-}
 function renderList(){
   var list=filtered(), el=document.getElementById("calls");
-  if(F.town&&F.town.indexOf("Delco: ")===0){renderDelcoTown(el,F.town);if(map)map.setView([39.92,-75.37],11);return []}
   if(!list.length){el.innerHTML='<li class="empty">No calls match these filters.</li>';return list}
   el.innerHTML=list.map(function(c){
     var isNew=seen&&!seen[c.id];
-    return '<li class="call '+esc(c.cat)+(c.active?"":" cleared")+(isNew?" new":"")+(selected===c.id?" sel":"")+'" data-id="'+esc(c.id)+'" tabindex="0">'+
+    return '<li class="call '+esc(c.cat)+(live(c)?"":" cleared")+(isNew?" new":"")+(selected===c.id?" sel":"")+'" data-id="'+esc(c.id)+'" tabindex="0">'+
       '<span class="bar"></span><div><div class="ctype">'+esc(c.type)+'</div><div class="cloc">'+esc(place(c))+'</div>'+
       '<div class="cmeta"><span>'+esc(c.muni)+'</span><span>'+esc(unit(c))+'</span><span>'+esc(LABEL[c.cat]||c.cat)+'</span>'+
       (c.prec==="town"?'<span class="approx">town-level location</span>':"")+(!c.ll?'<span class="approx">not on map</span>':"")+'</div></div>'+
       '<div class="right"><div class="ago">'+esc(ago(when(c)))+'</div><div'+(c.dispatched?"":' title="The county didn\'t list a dispatch time, so this is when we first saw the call"')+'>'+(c.dispatched?"":"seen ")+esc(day(when(c)))+" "+esc(clock(when(c)))+'</div>'+
-      (c.active?'<span class="badge on">Active</span>':'<span class="badge off" title="Left the active list around '+esc(clock(c.cleared))+'">Cleared</span>')+'</div></li>'}).join("");
+      (c.county==="Delaware"?(recent(c)?'<span class="badge on" title="Dispatched within the last hour. Delco\'s feed doesn\'t report when calls clear.">Recent</span>':'<span class="badge off">Dispatched</span>'):
+       c.active?'<span class="badge on">Active</span>':'<span class="badge off" title="Left the active list around '+esc(clock(c.cleared))+'">Cleared</span>')+'</div></li>'}).join("");
   el.querySelectorAll(".call").forEach(function(li){
     li.onclick=function(){focusCall(li.dataset.id)};
     li.onkeydown=function(e){if(e.key==="Enter")focusCall(li.dataset.id)}});
@@ -222,9 +217,9 @@ function renderMap(list){
   var pts=[];
   list.slice().reverse().forEach(function(c){
     if(!c.ll)return;
-    var m=L.marker(c.ll,{icon:L.divIcon({className:"",html:'<div class="dot '+esc(c.cat)+(c.active?"":" cleared")+'"></div>',iconSize:[14,14],iconAnchor:[7,7]}),
-      zIndexOffset:c.active?1000:0,title:c.type});
-    m.bindPopup('<b>'+esc(c.type)+'</b><br>'+esc(place(c))+'<br>'+esc(c.muni)+' · '+esc(unit(c))+'<br><span style="color:var(--muted)">'+esc(day(when(c)))+" "+esc(clock(when(c)))+' · '+(c.active?"Active":"Cleared")+(c.prec==="town"?" · approximate":"")+'</span>');
+    var m=L.marker(c.ll,{icon:L.divIcon({className:"",html:'<div class="dot '+esc(c.cat)+(live(c)?"":" cleared")+'"></div>',iconSize:[14,14],iconAnchor:[7,7]}),
+      zIndexOffset:live(c)?1000:0,title:c.type});
+    m.bindPopup('<b>'+esc(c.type)+'</b><br>'+esc(place(c))+'<br>'+esc(c.muni)+' · '+esc(unit(c))+'<br><span style="color:var(--muted)">'+esc(day(when(c)))+" "+esc(clock(when(c)))+' · '+(c.county==="Delaware"?(recent(c)?"Recent":"Dispatched"):c.active?"Active":"Cleared")+(c.prec==="town"?" · approximate":"")+'</span>');
     m.on("click",function(){selected=c.id;highlight()});
     m.addTo(layer);markers[c.id]=m;pts.push(c.ll)});
   if(firstLoad&&pts.length){map.fitBounds(pts,{padding:[30,30],maxZoom:13})}
@@ -265,12 +260,12 @@ function render(){
 function load(){
   fetch("data.json?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
     D=d;
-    var towns={};d.calls.forEach(function(c){towns[c.muni]=1});
+    var byC={Delaware:{},Chester:{}};d.calls.forEach(function(c){(byC[c.county]||(byC[c.county]={}))[c.muni]=1});
     var sel=document.getElementById("town"), cur=F.town;
     function opt(t){return '<option'+(t===cur?" selected":"")+'>'+esc(t)+'</option>'}
-    sel.innerHTML='<option value="">All towns</option><optgroup label="Chester County: live calls">'+Object.keys(towns).sort().map(opt).join("")+'</optgroup>'+
-      '<optgroup label="Delaware County: no public call data">'+(d.delco_munis||[]).map(function(t){return opt("Delco: "+t)}).join("")+'</optgroup>';
-    if(cur&&!towns[cur]&&cur.indexOf("Delco: ")!==0){sel.insertAdjacentHTML("beforeend",opt(cur))}
+    sel.innerHTML='<option value="">All towns</option><optgroup label="Delaware County">'+Object.keys(byC.Delaware).sort().map(opt).join("")+'</optgroup>'+
+      '<optgroup label="Chester County">'+Object.keys(byC.Chester).sort().map(opt).join("")+'</optgroup>';
+    if(cur&&!byC.Delaware[cur]&&!byC.Chester[cur]){sel.insertAdjacentHTML("beforeend",opt(cur))}
     render();
   }).catch(function(){document.getElementById("status").textContent="Couldn't load calls. Retrying…"});
 }
@@ -279,12 +274,14 @@ function saveF(){store.set("dispatch-filters",F)}
 function syncControls(){
   document.querySelectorAll("#cats [data-cat]").forEach(function(b){b.setAttribute("aria-pressed",!!F.cats[b.dataset.cat])});
   document.getElementById("activeOnly").setAttribute("aria-pressed",!!F.active);
+  document.querySelectorAll("#cats [data-county]").forEach(function(b){b.setAttribute("aria-pressed",!!F.counties[b.dataset.county])});
   document.getElementById("notify").setAttribute("aria-pressed",!!F.notify);
   document.getElementById("q").value=F.q;
 }
 function setTab(t){document.body.dataset.tab=t;document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.tab===t)});if(t==="map"&&map)setTimeout(function(){map.invalidateSize()},30)}
 
 document.querySelectorAll("#cats [data-cat]").forEach(function(b){b.onclick=function(){F.cats[b.dataset.cat]=!F.cats[b.dataset.cat];saveF();syncControls();if(D)render()}});
+document.querySelectorAll("#cats [data-county]").forEach(function(b){b.onclick=function(){F.counties[b.dataset.county]=!F.counties[b.dataset.county];saveF();syncControls();firstLoad=true;if(D)render()}});
 document.getElementById("activeOnly").onclick=function(){F.active=!F.active;saveF();syncControls();if(D)render()};
 document.getElementById("town").onchange=function(e){F.town=e.target.value;saveF();if(D)render()};
 document.getElementById("q").oninput=function(e){F.q=e.target.value;saveF();if(D){var l=renderList();renderMap(l)}};

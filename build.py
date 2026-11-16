@@ -145,6 +145,76 @@ def chesco_closures():
     return out
 
 
+# ---------------------------------------------------------------- Delaware County (Delco Dispatch, used with permission)
+# Only the first page of the simple feed is read; robots.txt allows /Pages/Simple without a query string.
+# Patient notes, apartment numbers, facility names and house numbers are never kept.
+DELCO_FEED = "https://delcodispatch.com/Pages/Simple"
+
+
+def delco_calls():
+    s = get(DELCO_FEED).decode("utf-8", "replace")
+    incidents, order = {}, []
+    last_by_station = {}
+    for b in re.split(r'<div class="row" data-page-id="', s)[1:]:
+        station = text((re.search(r'<span title="[^"]*">(.*?)</span>', b, re.S) or [None, ""])[1])
+        units_lbl = text((re.search(r"<span>([^<|]+)</span>\s*\|", b) or [None, ""])[1])
+        m = re.search(r"(\d{2}/\d{2}/\d{4})&nbsp;.*?(\d{2}:\d{2}:\d{2})", b, re.S)
+        paged = datetime.strptime(f"{m.group(1)} {m.group(2)}", "%m/%d/%Y %H:%M:%S").replace(tzinfo=ET_TZ) if m else None
+        f = {k: text(v) for k, v in re.findall(r'<p class="(\w+)"[^>]*>(.*?)</p>', b, re.S)}
+        def field(k, label):
+            return re.sub(rf"^{label}:\s*", "", f.get(k, ""), flags=re.I).strip()
+        nature = field("nature", "Nature")
+        if not nature:
+            # unit-assignment page: a list of apparatus sent to the same station moments later
+            units = re.findall(r"\b([A-Z]{1,5}\d{1,4}[A-Z]?)\b", f.get("message", ""))
+            key = last_by_station.get(station)
+            if key and units and paged and abs((paged - incidents[key]["_paged"]).total_seconds()) < 180:
+                incidents[key]["units"] = sorted(set(incidents[key]["units"]) | set(units))
+            continue
+        loc_raw = text(f.get("location", ""))
+        street, _, muni = loc_raw.partition(",")
+        street = re.sub(r"^\d+[A-Z]?\s+", "", street.strip())          # drop the house number
+        xs = [x for x in (field("crossStreet1", "X1").upper(), field("crossStreet2", "X2").upper()) if x and x != "DEAD END"]
+        street = street.strip(" /")
+        if not street:                      # intersection calls come through as "/" with the streets in X1/X2
+            loc = " & ".join(xs[:2])
+        else:
+            loc = f"{street} & {xs[0]}" if xs else street
+        t = field("time", "Time")
+        try:
+            dispatched = datetime.strptime(f"{paged:%m/%d/%Y} {t}", "%m/%d/%Y %H:%M:%S").replace(tzinfo=ET_TZ) if t and paged else paged
+        except ValueError:
+            dispatched = paged
+        inc = field("incidentNumber", "Incident")
+        key = inc or f"D-{re.sub(r'\W+', '', nature)}-{re.sub(r'\W+', '', street)}-{t}"
+        up = nature.upper()
+        cat = ("fire" if up.startswith("FIRE") else "ems" if "EMS" in up[:8] else
+               "traffic" if re.search(r"\b(MVA|VEHICLE|ACCIDENT|TRAFFIC|CRASH)\b", up) else "fire")
+        typ = re.sub(r"^(ALS-EMS|BLS-EMS|EMS|RESCUE|MISC|HAZMAT|POLICE|TRAFFIC)[-\s]+", "", nature)
+        typ = re.sub(r"^FIRE-[A-Z]{2,5}\s+", "", typ)      # "FIRE-BLD BUILDING FIRE" -> "BUILDING FIRE"
+        typ = re.sub(r"^FIRE-", "", typ)
+        if up.startswith("ALS"):
+            typ += " (ALS)"
+        c = incidents.get(key)
+        if not c:
+            c = {"id": key, "cat": cat, "type": titlecase(typ).replace("(als)", "(ALS)"), "loc": loc, "muni": muni.strip(), "station": "",
+                 "stations": [], "units": [], "dispatched": iso(dispatched), "county": "Delaware", "_paged": paged}
+            incidents[key] = c
+            order.append(key)
+        if station and station not in c["stations"]:
+            c["stations"].append(station)
+        if units_lbl:
+            c["units"] = sorted(set(c["units"]) | {units_lbl})
+        last_by_station[station] = key
+    out = []
+    for k in order:
+        c = incidents[k]
+        c.pop("_paged", None)
+        c["station"] = ", ".join(c["stations"][:4]) + (f" +{len(c['stations']) - 4}" if len(c["stations"]) > 4 else "")
+        out.append(c)
+    return out
+
+
 # ---------------------------------------------------------------- geocoding (OpenStreetMap Nominatim, cached)
 class Geocoder:
     def __init__(self, cache):
@@ -289,9 +359,25 @@ def main(state_dir, out_dir):
                 c.update(first_seen=iso(NOW), last_seen=iso(NOW), active=True)
                 history[c["id"]] = c
         for h in history.values():
-            if h.get("active") and h["id"] not in live_ids:
+            if h.get("county") == "Chester" and h.get("active") and h["id"] not in live_ids:
                 h["active"] = False
                 h["cleared"] = iso(NOW)   # cleared at or before this run
+
+    try:
+        delco = delco_calls()
+    except Exception as err:
+        delco = []
+        errors.append(f"Delco Dispatch unreachable: {err}")
+    for c in delco:
+        h = history.get(c["id"])
+        if h:
+            h["stations"] = sorted(set(h.get("stations", [])) | set(c["stations"]))
+            h["units"] = sorted(set(h.get("units", [])) | set(c["units"]))
+            h["station"] = ", ".join(h["stations"][:4]) + (f" +{len(h['stations']) - 4}" if len(h["stations"]) > 4 else "")
+            h["last_seen"] = iso(NOW)
+        else:
+            c.update(first_seen=iso(NOW), last_seen=iso(NOW), active=None)   # the Delco feed has no cleared status
+            history[c["id"]] = c
 
     # drop old calls
     for k in [k for k, h in history.items() if NOW - from_iso(h.get("dispatched") or h["first_seen"]) > KEEP]:
