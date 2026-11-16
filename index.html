@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Castafero Dispatch</title>
+<meta name="description" content="Live fire, EMS and traffic calls for Chester County, PA, plus Delaware County scanner audio, weather alerts and local incident news. No ads, no login.">
+<meta name="theme-color" content="#0f1216">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#f4f5f7;--surface:#fff;--ink:#14171c;--muted:#5f6773;--line:#e2e5ea;--soft:#eef0f3;
+  --fire:#e03131;--ems:#1c7ed6;--traffic:#f08c00;--ok:#2b8a3e;--accent:#e03131;
+  --f-body:"Inter",system-ui,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1216;--surface:#171b21;--ink:#e9ecef;--muted:#9aa3ae;--line:#29303a;--soft:#1f252d;
+  --fire:#ff6b6b;--ems:#4dabf7;--traffic:#ffa94d;--ok:#69db7c}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-body)}
+a{color:inherit}
+button{font:inherit;color:inherit}
+header{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1000}
+.hin{max-width:1400px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:1.25rem;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.logo i{width:10px;height:10px;border-radius:50%;background:var(--fire);box-shadow:0 0 0 0 var(--fire);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.sub{color:var(--muted);font-size:.85rem}
+.status{margin-left:auto;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);text-align:right}
+.status.stale{color:var(--fire)}
+.stats{max-width:1400px;margin:0 auto;padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap}
+.stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:8px;background:var(--soft);border:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+.stat b{font-family:var(--f-mono);font-size:1.05rem;color:var(--ink)}
+.stat.fire b{color:var(--fire)} .stat.ems b{color:var(--ems)} .stat.traffic b{color:var(--traffic)}
+.layout{max-width:1400px;margin:0 auto;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+.filters{padding:12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.frow{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--line);background:var(--surface);padding:5px 12px;border-radius:999px;font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .sw{width:9px;height:9px;border-radius:50%}
+select,input[type=search]{font:inherit;font-size:.88rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-width:0}
+input[type=search]{flex:1}
+.calls{list-style:none;margin:0;padding:0;max-height:calc(100vh - 260px);overflow:auto}
+.call{display:grid;grid-template-columns:6px minmax(0,1fr) auto;gap:12px;padding:12px;border-bottom:1px solid var(--line);cursor:pointer}
+.call:hover,.call.sel{background:var(--soft)}
+.call .bar{border-radius:4px;background:var(--muted)}
+.call.fire .bar{background:var(--fire)} .call.ems .bar{background:var(--ems)} .call.traffic .bar{background:var(--traffic)}
+.call.cleared{opacity:.6}
+.call.new{animation:flash 2.5s ease-out}
+@keyframes flash{from{background:color-mix(in srgb,var(--fire) 22%,transparent)}}
+.ctype{font-weight:600}
+.cloc{font-size:.9rem}
+.cmeta{font-size:.8rem;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;margin-top:2px}
+.right{text-align:right;font-size:.8rem;color:var(--muted);white-space:nowrap}
+.right .ago{font-family:var(--f-mono);color:var(--ink);font-size:.82rem}
+.badge{display:inline-block;font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:999px;margin-top:4px}
+.badge.on{color:var(--ok);border:1px solid var(--ok)} .badge.off{border:1px solid var(--line)}
+.approx{font-size:.72rem;color:var(--muted);font-style:italic}
+.empty{padding:28px 16px;text-align:center;color:var(--muted)}
+.mapwrap{position:sticky;top:120px}
+#map{height:calc(100vh - 160px);min-height:420px;border-radius:12px;border:1px solid var(--line);background:var(--soft)}
+.leaflet-container{font:inherit}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}}
+.leaflet-popup-content{margin:10px 12px;font-size:.88rem}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.dot.fire{background:var(--fire)} .dot.ems{background:var(--ems)} .dot.traffic{background:var(--traffic)}
+.dot.cleared{opacity:.45;width:10px;height:10px}
+.below{max-width:1400px;margin:0 auto;padding:0 16px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.box h2{font-size:1.05rem;margin:0 0 4px}
+.box p.note{color:var(--muted);font-size:.85rem;margin:0 0 12px}
+.box ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.box li{font-size:.9rem}
+.box li a{text-decoration:none} .box li a:hover{text-decoration:underline}
+.src{color:var(--muted);font-size:.78rem}
+.scan a{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;text-decoration:none}
+.scan a:hover{border-color:var(--ink)}
+.scan a::before{content:"🎧"}
+.alert{border-left:4px solid var(--traffic);padding-left:10px}
+.alert.Extreme,.alert.Severe{border-left-color:var(--fire)}
+.tabs{display:none}
+.notif{margin-left:auto}
+footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);font-size:.8rem}
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr);padding:12px}
+  .tabs{display:flex;gap:6px;max-width:1400px;margin:0 auto;padding:12px 16px 0}
+  .tabs button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-weight:600}
+  .tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+  body[data-tab="list"] .mapwrap{display:none}
+  body[data-tab="map"] .listpanel{display:none}
+  .mapwrap{position:static}
+  #map{height:70vh}
+  .calls{max-height:none}
+  .status{margin-left:0;text-align:left;width:100%}
+}
+</style>
+</head>
+<body data-tab="list">
+<header>
+  <div class="hin">
+    <div><div class="logo"><i aria-hidden="true"></i>Castafero Dispatch</div><div class="sub">Chester &amp; Delaware County, PA · live fire, EMS &amp; traffic</div></div>
+    <div class="status" id="status">Loading…</div>
+  </div>
+  <div class="stats" id="stats"></div>
+</header>
+<div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-tab="list">List</button><button role="tab" aria-selected="false" data-tab="map">Map</button></div>
+<div class="layout">
+  <section class="panel listpanel">
+    <div class="filters">
+      <div class="frow" id="cats">
+        <button class="chip" aria-pressed="true" data-cat="fire"><span class="sw" style="background:var(--fire)"></span>Fire</button>
+        <button class="chip" aria-pressed="true" data-cat="ems"><span class="sw" style="background:var(--ems)"></span>EMS</button>
+        <button class="chip" aria-pressed="true" data-cat="traffic"><span class="sw" style="background:var(--traffic)"></span>Traffic</button>
+        <button class="chip" aria-pressed="false" id="activeOnly">Active only</button>
+        <button class="chip notif" aria-pressed="false" id="notify" title="Browser notification for new calls that match these filters while this page is open">🔔 Alerts</button>
+      </div>
+      <div class="frow"><select id="town" aria-label="Town"><option value="">All towns</option></select><input type="search" id="q" placeholder="Search street, call type, station…" aria-label="Search calls"></div>
+    </div>
+    <ul class="calls" id="calls"><li class="empty">Loading calls…</li></ul>
+  </section>
+  <section class="mapwrap"><div id="map" role="region" aria-label="Map of calls"></div></section>
+</div>
+
+<div class="below">
+  <section class="box" id="delco">
+    <h2>Delaware County</h2>
+    <p class="note">Delaware County doesn't publish a public live 911 feed the way Chester County does, so Delco calls can't be listed here. Live scanner audio is the best real-time source, and recent local incident news is below.</p>
+    <div class="scan"><ul id="scanners"></ul></div>
+  </section>
+  <section class="box"><h2>Local incident news</h2><p class="note">Fires, crashes and police activity reported in Delco and Chester County over the last 3 days. Satire sites are excluded.</p><ul id="news"></ul></section>
+  <section class="box"><h2>Weather alerts</h2><p class="note">Active National Weather Service alerts for Delaware and Chester counties.</p><ul id="alerts"></ul></section>
+  <section class="box"><h2>Chester County road closures</h2><p class="note">From the county's CAD system.</p><ul id="closures"></ul></section>
+</div>
+<footer>Chester County call data comes from the county Department of Emergency Services' public <a href="https://webcad.chesco.org/WebCad/webcad.asp">WebCAD</a> page and is checked every 5 minutes. Calls stay listed for 48 hours. Locations are the nearest cross streets, placed on the map from OpenStreetMap, so pins are approximate. "Cleared" means the call left the county's active list. This site isn't affiliated with any county or emergency agency, so don't use it to report an emergency: call 911. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+"use strict";
+var D=null, seen=null, selected=null, markers={}, map=null, layer=null, tiles=null, firstLoad=true;
+var LABEL={fire:"Fire",ems:"EMS",traffic:"Traffic"};
+var store={get:function(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+var F=Object.assign({cats:{fire:true,ems:true,traffic:true},active:false,town:"",q:"",notify:false},store.get("dispatch-filters")||{});
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function safeUrl(u){return /^https?:\/\//i.test(u||"")?u:"#"}
+function ago(iso){if(!iso)return"";var m=Math.round((Date.now()-new Date(iso))/60000);if(m<1)return"now";if(m<60)return m+"m ago";var h=Math.floor(m/60);if(h<24)return h+"h "+(m%60)+"m ago";return Math.floor(h/24)+"d ago"}
+function clock(iso){return iso?new Date(iso).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}):""}
+function day(iso){return iso?new Date(iso).toLocaleDateString([], {weekday:"short"}):""}
+function title(s){return String(s||"").toLowerCase().replace(/\b([a-z])/g,function(c){return c.toUpperCase()}).replace(/\b(Ems|Als|Bls|Mva)\b/g,function(w){return w.toUpperCase()})}
+function unit(c){return (c.cat==="traffic"?"Agency ":"Station ")+c.station}
+function when(c){return c.dispatched||c.first_seen}
+function place(c){return title(String(c.loc||"").replace(/\s*&\s*$/,"").replace(/\s*&\s*/," & "))}
+
+function initMap(){
+  map=L.map("map",{zoomControl:true,attributionControl:true}).setView([39.97,-75.60],10);
+  tiles=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,
+    attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+  layer=L.layerGroup().addTo(map);
+}
+
+function filtered(){
+  var q=F.q.trim().toLowerCase();
+  return D.calls.filter(function(c){
+    if(!F.cats[c.cat])return false;
+    if(F.active&&!c.active)return false;
+    if(F.town&&c.muni!==F.town)return false;
+    if(q&&(c.type+" "+c.loc+" "+c.muni+" station "+c.station+" "+c.id).toLowerCase().indexOf(q)<0)return false;
+    return true});
+}
+
+function renderStats(){
+  var act={fire:0,ems:0,traffic:0},day24=0,towns={};
+  D.calls.forEach(function(c){if(c.active)act[c.cat]=(act[c.cat]||0)+1;if(Date.now()-new Date(c.dispatched||c.first_seen)<864e5){day24++;towns[c.muni]=(towns[c.muni]||0)+1}});
+  var busiest=Object.keys(towns).sort(function(a,b){return towns[b]-towns[a]})[0];
+  document.getElementById("stats").innerHTML=
+    '<span class="stat fire"><b>'+act.fire+'</b>fire active</span><span class="stat ems"><b>'+act.ems+'</b>EMS active</span><span class="stat traffic"><b>'+act.traffic+'</b>traffic active</span>'+
+    '<span class="stat"><b>'+day24+'</b>calls in 24h</span>'+(busiest?'<span class="stat">Busiest: <b style="font-family:inherit;font-size:.9rem">'+esc(busiest)+'</b> ('+towns[busiest]+')</span>':"");
+}
+
+function renderList(){
+  var list=filtered(), el=document.getElementById("calls");
+  if(!list.length){el.innerHTML='<li class="empty">No calls match these filters.</li>';return list}
+  el.innerHTML=list.map(function(c){
+    var isNew=seen&&!seen[c.id];
+    return '<li class="call '+esc(c.cat)+(c.active?"":" cleared")+(isNew?" new":"")+(selected===c.id?" sel":"")+'" data-id="'+esc(c.id)+'" tabindex="0">'+
+      '<span class="bar"></span><div><div class="ctype">'+esc(c.type)+'</div><div class="cloc">'+esc(place(c))+'</div>'+
+      '<div class="cmeta"><span>'+esc(c.muni)+'</span><span>'+esc(unit(c))+'</span><span>'+esc(LABEL[c.cat]||c.cat)+'</span>'+
+      (c.prec==="town"?'<span class="approx">town-level location</span>':"")+(!c.ll?'<span class="approx">not on map</span>':"")+'</div></div>'+
+      '<div class="right"><div class="ago">'+esc(ago(when(c)))+'</div><div'+(c.dispatched?"":' title="The county didn\'t list a dispatch time, so this is when we first saw the call"')+'>'+(c.dispatched?"":"seen ")+esc(day(when(c)))+" "+esc(clock(when(c)))+'</div>'+
+      (c.active?'<span class="badge on">Active</span>':'<span class="badge off" title="Left the active list around '+esc(clock(c.cleared))+'">Cleared</span>')+'</div></li>'}).join("");
+  el.querySelectorAll(".call").forEach(function(li){
+    li.onclick=function(){focusCall(li.dataset.id)};
+    li.onkeydown=function(e){if(e.key==="Enter")focusCall(li.dataset.id)}});
+  return list;
+}
+
+function renderMap(list){
+  if(!map)return;
+  layer.clearLayers();markers={};
+  var pts=[];
+  list.slice().reverse().forEach(function(c){
+    if(!c.ll)return;
+    var m=L.marker(c.ll,{icon:L.divIcon({className:"",html:'<div class="dot '+esc(c.cat)+(c.active?"":" cleared")+'"></div>',iconSize:[14,14],iconAnchor:[7,7]}),
+      zIndexOffset:c.active?1000:0,title:c.type});
+    m.bindPopup('<b>'+esc(c.type)+'</b><br>'+esc(place(c))+'<br>'+esc(c.muni)+' · '+esc(unit(c))+'<br><span style="color:var(--muted)">'+esc(day(when(c)))+" "+esc(clock(when(c)))+' · '+(c.active?"Active":"Cleared")+(c.prec==="town"?" · approximate":"")+'</span>');
+    m.on("click",function(){selected=c.id;highlight()});
+    m.addTo(layer);markers[c.id]=m;pts.push(c.ll)});
+  if(firstLoad&&pts.length){map.fitBounds(pts,{padding:[30,30],maxZoom:13})}
+}
+
+function highlight(){document.querySelectorAll(".call").forEach(function(li){li.classList.toggle("sel",li.dataset.id===selected)});
+  var li=document.querySelector('.call[data-id="'+(window.CSS&&CSS.escape?CSS.escape(selected):selected)+'"]');if(li)li.scrollIntoView({block:"nearest",behavior:"smooth"})}
+function focusCall(id){selected=id;highlight();var m=markers[id];
+  if(window.matchMedia("(max-width:900px)").matches)setTab("map");
+  if(m){setTimeout(function(){map.invalidateSize();map.setView(m.getLatLng(),Math.max(map.getZoom(),14));m.openPopup()},50)}}
+
+function renderSide(){
+  document.getElementById("scanners").innerHTML=D.scanners.concat(D.chesco_scanners||[]).map(function(s){return '<li><a href="'+esc(safeUrl(s.url))+'" target="_blank" rel="noopener">'+esc(s.name)+'</a></li>'}).join("");
+  document.getElementById("news").innerHTML=D.news.length?D.news.slice(0,15).map(function(n){return '<li><a href="'+esc(safeUrl(n.url))+'" target="_blank" rel="noopener">'+esc(n.title)+'</a><div class="src">'+esc(n.src)+' · '+esc(n.county)+' County · '+esc(ago(n.date))+'</div></li>'}).join(""):'<li class="src">No incident news in the last 3 days.</li>';
+  document.getElementById("alerts").innerHTML=D.alerts.length?D.alerts.map(function(a){return '<li class="alert '+esc(a.severity)+'"><a href="'+esc(safeUrl(a.url))+'" target="_blank" rel="noopener"><b>'+esc(a.event)+'</b></a> · '+esc(a.county)+' County<div class="src">'+esc(a.headline)+'</div></li>'}).join(""):'<li class="src">No active weather alerts for Delaware or Chester County.</li>';
+  document.getElementById("closures").innerHTML=D.closures.length?D.closures.map(function(r){return '<li><b>'+esc(r.road)+'</b> · '+esc(r.muni)+'<div class="src">'+esc(r.kind)+' · since '+esc(r.since)+(r.remarks?" · "+esc(r.remarks):"")+'</div></li>'}).join(""):'<li class="src">No road closures listed right now.</li>';
+}
+
+function renderStatus(){
+  var s=document.getElementById("status"), up=D.upstream_updated||D.updated, age=(Date.now()-new Date(D.updated))/60000;
+  s.textContent="County CAD as of "+clock(up)+" · checked "+ago(D.updated)+(D.errors&&D.errors.length?" · some sources unavailable":"");
+  s.classList.toggle("stale",age>25);
+  if(age>25)s.textContent+=" · updates delayed";
+}
+
+function notifyNew(list){
+  if(!F.notify||!seen||!("Notification" in window)||Notification.permission!=="granted")return;
+  var fresh=list.filter(function(c){return !seen[c.id]&&c.active});
+  fresh.slice(0,3).forEach(function(c){try{new Notification(c.type+" · "+c.muni,{body:place(c)+" · "+unit(c),tag:c.id})}catch(e){}});
+}
+
+function render(){
+  renderStats();var list=renderList();renderMap(list);renderSide();renderStatus();
+  notifyNew(list);
+  seen={};D.calls.forEach(function(c){seen[c.id]=1});firstLoad=false;
+}
+
+function load(){
+  fetch("data.json?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
+    D=d;
+    var towns={};d.calls.forEach(function(c){towns[c.muni]=1});
+    var sel=document.getElementById("town"), cur=F.town;
+    sel.innerHTML='<option value="">All towns</option>'+Object.keys(towns).sort().map(function(t){return '<option'+(t===cur?" selected":"")+'>'+esc(t)+'</option>'}).join("");
+    if(cur&&!towns[cur]){sel.insertAdjacentHTML("beforeend",'<option selected>'+esc(cur)+'</option>')}
+    render();
+  }).catch(function(){document.getElementById("status").textContent="Couldn't load calls. Retrying…"});
+}
+
+function saveF(){store.set("dispatch-filters",F)}
+function syncControls(){
+  document.querySelectorAll("#cats [data-cat]").forEach(function(b){b.setAttribute("aria-pressed",!!F.cats[b.dataset.cat])});
+  document.getElementById("activeOnly").setAttribute("aria-pressed",!!F.active);
+  document.getElementById("notify").setAttribute("aria-pressed",!!F.notify);
+  document.getElementById("q").value=F.q;
+}
+function setTab(t){document.body.dataset.tab=t;document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.tab===t)});if(t==="map"&&map)setTimeout(function(){map.invalidateSize()},30)}
+
+document.querySelectorAll("#cats [data-cat]").forEach(function(b){b.onclick=function(){F.cats[b.dataset.cat]=!F.cats[b.dataset.cat];saveF();syncControls();if(D)render()}});
+document.getElementById("activeOnly").onclick=function(){F.active=!F.active;saveF();syncControls();if(D)render()};
+document.getElementById("town").onchange=function(e){F.town=e.target.value;saveF();if(D)render()};
+document.getElementById("q").oninput=function(e){F.q=e.target.value;saveF();if(D){var l=renderList();renderMap(l)}};
+document.getElementById("notify").onclick=function(){
+  if(!("Notification" in window)){alert("This browser doesn't support notifications.");return}
+  if(!F.notify&&Notification.permission!=="granted"){Notification.requestPermission().then(function(p){F.notify=p==="granted";saveF();syncControls()});return}
+  F.notify=!F.notify;saveF();syncControls()};
+document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){setTab(b.dataset.tab)}});
+
+syncControls();
+if(window.L)initMap();
+load();
+setInterval(load,60000);
+setInterval(function(){if(D){renderStatus();document.querySelectorAll(".call").length&&renderList()}},30000);
+})();
+</script>
+</body>
+</html>
