@@ -1,11 +1,16 @@
-// Cloudflare Worker: starts the dispatch build on GitHub.
-// - POST from the page's "Update now" button
-// - Cron trigger every 5 minutes (GitHub's own */5 schedule runs far less often than that)
-// Secret GITHUB_TOKEN: fine-grained token, repo oneboss302/dispatch only, Actions: Read and write.
+// Cloudflare Worker: starts castafero.com site builds on GitHub, because GitHub's own schedules
+// run far less often than configured (news went 7+ hours without a scheduled run).
+// - POST from dispatch's "Update now" button starts the dispatch build
+// - Cron triggers start the repo listed for that cron in SCHEDULES (add each cron in Settings > Triggers)
+// Secret GITHUB_TOKEN: fine-grained token, repos dispatch + news + outages, Actions: Read and write.
 // Abuse guard: never starts a run while one is queued/running or within 60s of the last one.
-const REPO = "oneboss302/dispatch";
-const WORKFLOW = "update.yml";
 const ORIGIN = "https://dispatch.castafero.com";
+const SCHEDULES = {
+  "*/5 * * * *": "oneboss302/dispatch",
+  "7 */2 * * *": "oneboss302/news",
+  "*/15 * * * *": "oneboss302/outages",
+};
+const WORKFLOW = "update.yml";
 
 function gh(env, path, init = {}) {
   return fetch("https://api.github.com" + path, {
@@ -19,7 +24,7 @@ function gh(env, path, init = {}) {
   });
 }
 
-async function trigger(env) {
+async function trigger(env, REPO) {
   const r = await gh(env, `/repos/${REPO}/actions/workflows/${WORKFLOW}/runs?per_page=5`);
   if (!r.ok) return { status: "error", detail: `GitHub ${r.status}` };
   const runs = (await r.json()).workflow_runs || [];
@@ -39,10 +44,11 @@ export default {
     if (req.method === "OPTIONS") return new Response(null, { headers });
     if (req.method !== "POST" || req.headers.get("Origin") !== ORIGIN)
       return new Response('{"status":"forbidden"}', { status: 403, headers });
-    const res = await trigger(env);
+    const res = await trigger(env, "oneboss302/dispatch");
     return new Response(JSON.stringify(res), { status: res.status === "error" ? 502 : 200, headers });
   },
-  async scheduled(_event, env, ctx) {
-    ctx.waitUntil(trigger(env));
+  async scheduled(event, env, ctx) {
+    const repo = SCHEDULES[event.cron];
+    if (repo) ctx.waitUntil(trigger(env, repo).then((r) => console.log(repo, JSON.stringify(r))));
   },
 };
