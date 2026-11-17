@@ -27,7 +27,9 @@ header{background:var(--surface);border-bottom:1px solid var(--line);position:st
 @keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .sub{color:var(--muted);font-size:.85rem}
 .status{margin-left:auto;font-family:var(--f-mono);font-size:.78rem;color:var(--muted);text-align:right}
-.status.stale{color:var(--fire)}
+.status .stale{color:var(--fire)}
+.upd{margin-left:8px;border:1px solid var(--line);background:var(--surface);padding:4px 10px;border-radius:999px;font:500 .78rem var(--f-body);cursor:pointer;color:var(--ink);white-space:nowrap}
+.upd:disabled{opacity:.6;cursor:wait}
 .stats{max-width:1400px;margin:0 auto;padding:0 16px 12px;display:flex;gap:8px;flex-wrap:wrap}
 .stat{display:flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:8px;background:var(--soft);border:1px solid var(--line);font-size:.85rem;color:var(--muted)}
 .stat b{font-family:var(--f-mono);font-size:1.05rem;color:var(--ink)}
@@ -108,7 +110,7 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
 <header>
   <div class="hin">
     <div><div class="logo"><i aria-hidden="true"></i>Castafero Dispatch</div><div class="sub">Delaware &amp; Chester County, PA · live fire, EMS &amp; traffic calls</div></div>
-    <div class="status" id="status">Loading…</div>
+    <div class="status"><span id="status">Loading…</span><button class="upd" id="upd" hidden title="Ask the server to check the county CAD right now">↻ Update now</button></div>
   </div>
   <div class="stats" id="stats"></div>
 </header>
@@ -271,6 +273,23 @@ function load(){
     render();
   }).catch(function(){document.getElementById("status").textContent="Couldn't load calls. Retrying…"});
 }
+
+// "Update now": a Cloudflare Worker starts the GitHub build (worker/update-worker.js); poll until data.json changes.
+var UPDATE_URL="https://dispatch-update.patrick-547.workers.dev";
+function updateNow(){
+  var b=document.getElementById("upd"), was=D&&D.updated, tries=0;
+  b.disabled=true;b.textContent="Updating…";
+  function done(t){b.textContent=t;setTimeout(function(){b.disabled=false;b.textContent="↻ Update now"},5000)}
+  fetch(UPDATE_URL,{method:"POST"}).then(function(r){return r.json()}).then(function(res){
+    if(res.status==="error")return done("Update failed");
+    var t=setInterval(function(){
+      tries++;load();
+      if(D&&D.updated!==was){clearInterval(t);done("Updated ✓")}
+      else if(tries>=16){clearInterval(t);done("Still running…")}
+    },15000);
+  }).catch(function(){done("Update failed")});
+}
+if(UPDATE_URL){var ub=document.getElementById("upd");ub.hidden=false;ub.onclick=updateNow}
 
 function saveF(){store.set("dispatch-filters",F)}
 function syncControls(){
