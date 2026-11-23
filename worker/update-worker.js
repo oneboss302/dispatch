@@ -2,11 +2,12 @@
 // run far less often than configured (news went 7+ hours without a scheduled run).
 // - POST from dispatch's "Update now" button starts the dispatch build
 // - Cron triggers start the repo listed for that cron in SCHEDULES (add each cron in Settings > Triggers)
+// Dispatch runs every 2 minutes; the Worker's 60s guard and the busy check stop overlapping runs.
 // Secret GITHUB_TOKEN: fine-grained token, repos dispatch + news + outages, Actions: Read and write.
 // Abuse guard: never starts a run while one is queued/running or within 60s of the last one.
 const ORIGIN = "https://dispatch.castafero.com";
 const SCHEDULES = {
-  "*/5 * * * *": "oneboss302/dispatch",
+  "*/2 * * * *": "oneboss302/dispatch",
   "7 */2 * * *": "oneboss302/news",
   "*/15 * * * *": "oneboss302/outages",
 };

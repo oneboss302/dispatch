@@ -145,7 +145,7 @@ footer{max-width:1400px;margin:0 auto;padding:0 16px 40px;color:var(--muted);fon
   <section class="box"><h2>Weather alerts</h2><p class="note">Active National Weather Service alerts for Delaware and Chester counties.</p><ul id="alerts"></ul></section>
   <section class="box"><h2>Chester County road closures</h2><p class="note">From the county's CAD system.</p><ul id="closures"></ul></section>
 </div>
-<footer>Delaware County calls are courtesy of <a href="https://delcodispatch.com/">Delco Dispatch</a>, used with permission. Only call type, cross streets, town, stations and units are shown. Patient notes, house numbers, apartment numbers and facility names are removed. Delco's feed doesn't report when calls clear, so Delco calls show as "Recent" for an hour. Chester County call data comes from the county Department of Emergency Services' public <a href="https://webcad.chesco.org/WebCad/webcad.asp">WebCAD</a> page and is checked every 5 minutes. Calls stay listed for 48 hours. Locations are the nearest cross streets, placed on the map from OpenStreetMap, so pins are approximate. "Cleared" means a Chester County call left the county's active list. This site isn't affiliated with any county or emergency agency, so don't use it to report an emergency: call 911. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</footer>
+<footer>Delaware County calls are courtesy of <a href="https://delcodispatch.com/">Delco Dispatch</a>, used with permission. Only call type, cross streets, town, stations and units are shown. Patient notes, house numbers, apartment numbers and facility names are removed. Delco's feed doesn't report when calls clear, so Delco calls show as "Recent" for an hour. Chester County call data comes from the county Department of Emergency Services' public <a href="https://webcad.chesco.org/WebCad/webcad.asp">WebCAD</a> page and is checked every 2 minutes. Calls stay listed for 48 hours. Locations are the nearest cross streets, placed on the map from OpenStreetMap, so pins are approximate. "Cleared" means a Chester County call left the county's active list. This site isn't affiliated with any county or emergency agency, so don't use it to report an emergency: call 911. Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
@@ -315,7 +315,7 @@ document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function
 syncControls();
 if(window.L)initMap();
 load();
-setInterval(load,60000);
+setInterval(load,120000);
 setInterval(function(){if(D){renderStatus();document.querySelectorAll(".call").length&&renderList()}},30000);
 })();
 </script>
