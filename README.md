@@ -9,3 +9,5 @@ A clean, ad-free live dispatch board for Chester and Delaware County, PA.
 The page is a static shell (`index.html`) that loads `data.json` every 60 seconds. It has filters by type, town and text, an active-only view, a map, and optional browser notifications for new calls.
 
 `build.py` is standard-library Python. `.github/workflows/update.yml` runs it every 5 minutes and carries call history between runs in the Actions cache. Yesterday's calls are archived to `archive/` daily.
+
+Last forced rebuild: 2026-11-23 11:22:46Z
